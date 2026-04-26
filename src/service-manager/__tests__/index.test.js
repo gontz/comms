@@ -15,14 +15,12 @@
  */
 describe('Service Manager module test suite', () => {
   let electron;
-  let userAgent;
   let serviceManager;
   let settings;
   beforeEach(async () => {
     jest.resetModules();
     electron = require('../../__tests__').testElectron();
     settings = await require('../../__tests__').testSettings();
-    userAgent = require('../../user-agent');
     serviceManager = require('../');
   });
   describe('getService', () => {
@@ -194,23 +192,15 @@ describe('Service Manager module test suite', () => {
         .toHaveBeenCalledWith('window.tabId = \'1337\';window.serviceId = \'1337\';');
     });
     describe('cleanUserAgent', () => {
-      test('chromium version available, should remove non-standard tokens from user-agent header and set version', () => {
-        // Given
-        userAgent.BROWSER_VERSIONS.chromium = '79.0.1337.79';
+      test('should set a clean Chrome user-agent without Electron tokens', () => {
         // When
         serviceManager.addServices({send: jest.fn()})([{id: 1337, url: 'https://localhost'}]);
         // Then
         const result = serviceManager.getService(1337).webContents.userAgent;
-        expect(result).toBe('Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/1337.36 (KHTML, like Gecko) Chrome/79.0.1337.79 Safari/537.36');
-        expect(require('electron').app.userAgentFallback).toBe('Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/1337.36 (KHTML, like Gecko) Chrome/79.0.1337.79 Safari/537.36');
-      });
-      test('chromium not version available, should remove non-standard tokens from user-agent header', () => {
-        // When
-        serviceManager.addServices({send: jest.fn()})([{id: 1337, url: 'https://localhost'}]);
-        // Then
-        const result = serviceManager.getService(1337).webContents.userAgent;
-        expect(result).toBe('Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/1337.36 (KHTML, like Gecko) Chrome/WillBeReplacedByLatestChromium Safari/537.36');
-        expect(require('electron').app.userAgentFallback).toBe('Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/1337.36 (KHTML, like Gecko) Chrome/WillBeReplacedByLatestChromium Safari/537.36');
+        expect(result).not.toContain('Electron');
+        expect(result).toContain('Chrome/');
+        expect(result).toContain('Safari/537.36');
+        expect(require('electron').app.userAgentFallback).toBe(result);
       });
     });
     describe('Event listeners', () => {

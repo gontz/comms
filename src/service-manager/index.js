@@ -18,7 +18,7 @@ const path = require('node:path');
 const {APP_EVENTS} = require('../constants');
 const {loadSettings, updateSettings} = require('../settings');
 const {getEnabledDictionaries, getUseNativeSpellChecker} = require('../spell-check');
-const {userAgentForWebContents, addUserAgentInterceptor} = require('../user-agent');
+const {chromeUserAgent, addUserAgentInterceptor} = require('../user-agent');
 const {handleContextMenu} = require('./context-menu');
 const {handleRedirect, windowOpenHandler} = require('./redirect');
 
@@ -60,7 +60,7 @@ const handlePageFaviconUpdated = (view, ipcSender, serviceId) => async (_e, favi
 const setGlobalUserAgentFallback = userAgent => (app.userAgentFallback = userAgent);
 
 const cleanUserAgent = view => {
-  const validUserAgent = userAgentForWebContents(view.webContents);
+  const validUserAgent = chromeUserAgent();
   view.webContents.userAgent = validUserAgent;
   setGlobalUserAgentFallback(validUserAgent);
 };

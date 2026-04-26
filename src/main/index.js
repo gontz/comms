@@ -37,7 +37,7 @@ const serviceManager = require('../service-manager');
 const {openTaskManagerDialog} = require('../task-manager');
 const {initTray} = require('../tray');
 const {checkForUpdatesInit} = require('../update');
-const {initBrowserVersions, userAgentForWebContents} = require('../user-agent');
+const {initBrowserVersions, chromeUserAgent} = require('../user-agent');
 
 const webPreferences = {
   contextIsolation: false,
@@ -328,7 +328,7 @@ const initGlobalListeners = () => {
 const browserVersionsReady = () => {
   tabContainer = newTabContainer();
   appMenu = newAppMenu();
-  app.userAgentFallback = userAgentForWebContents(appMenu.webContents);
+  app.userAgentFallback = chromeUserAgent();
   eventBus.emit(APP_EVENTS.keyboardEventsInit);
   eventBus.emit(APP_EVENTS.checkForUpdatesInit);
   eventBus.emit(APP_EVENTS.trayInit);

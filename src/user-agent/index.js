@@ -90,7 +90,7 @@ const firefoxUserAgent = userAgent => firefoxVersion => {
 const userAgentForWebContents = webContents => defaultUserAgent(webContents.userAgent);
 
 const chromeUserAgent = () => {
-  const chromeVersion = process.versions.chrome;
+  const chromeVersion = process.versions.chrome ?? '130.0.0.0';
   // Extract major version and format as X.0.0.0 (e.g., 142.0.7444.59 -> 142.0.0.0)
   const majorVersion = chromeVersion.split('.')[0];
   const formattedVersion = `${majorVersion}.0.0.0`;
