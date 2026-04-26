@@ -63,7 +63,7 @@ describe('Help in Browser test suite', () => {
   test('render, should show version in footer', () => {
     // Then
     expect(document.querySelector('.documents-footer').textContent)
-      .toEqual('ElectronIM version 0.0.0');
+      .toEqual('ElectronIM version 0.1.0');
   });
   describe('Main Button events', () => {
     test('Close should send close dialog event', () => {

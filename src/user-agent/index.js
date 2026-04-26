@@ -16,7 +16,7 @@
 const {httpClient} = require('../http-client');
 
 // URLs can be overridden for testing purposes
-let chromiumVersionsUrl = `https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases?filter=endtime>${new Date().toISOString()}`;
+let chromiumVersionsUrl = `https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases?filter=endtime%3E${new Date().toISOString()}`;
 let firefoxVersionsUrl = 'https://product-details.mozilla.org/1.0/firefox_versions.json';
 
 const BROWSER_VERSIONS = {
@@ -70,12 +70,12 @@ const initBrowserVersions = async () => {
 };
 
 const replaceChromeVersion = userAgent => (BROWSER_VERSIONS.chromium ?
-  userAgent.replaceAll(/Chrome\/.*? /g, `Chrome/${BROWSER_VERSIONS.chromium} `)
+  userAgent.replaceAll(/Chrome\/\S+/g, `Chrome/${BROWSER_VERSIONS.chromium}`)
   : userAgent);
 
 const sanitizeUserAgent = userAgent => userAgent
-  .replaceAll(/ElectronIM\/.*? /g, '')
-  .replaceAll(/Electron\/.*? /g, '');
+  .replaceAll(/ElectronIM\/\S+\s*/g, '')
+  .replaceAll(/Electron\/\S+\s*/g, '');
 
 const defaultUserAgent = userAgent => sanitizeUserAgent(replaceChromeVersion(userAgent));
 

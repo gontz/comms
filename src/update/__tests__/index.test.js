@@ -104,8 +104,8 @@ describe('Update module test suite', () => {
         });
         describe('does not emit event when current version', () => {
           test.each([
-            ['v0.0.0'],
-            ['0.0.0']
+            ['v0.1.0'],
+            ['0.1.0']
           ])('for version %s', async tag_name => {
             // Given
             testHandler = (req, res) => {

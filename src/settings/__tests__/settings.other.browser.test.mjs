@@ -183,6 +183,6 @@ describe('Settings (Other) in Browser test suite', () => {
   });
   test('ElectronIM version is visible', async () => {
     const $electronimVersion = await findByTestId(document, 'settings-electronim-version');
-    expect($electronimVersion.textContent).toBe('ElectronIM version 0.0.0');
+    expect($electronimVersion.textContent).toBe('ElectronIM version 0.1.0');
   });
 });
