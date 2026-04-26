@@ -1,6 +1,6 @@
 {
   "name": "electronim",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Free/Libre open source Electron based multi instant messaging (IM) client.",
   "author": {
     "name": "Marc Nuri",
