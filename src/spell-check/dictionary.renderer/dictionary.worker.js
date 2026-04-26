@@ -58,36 +58,49 @@ globalThis.reloadDictionaries = async () => {
   const loadPromises = [];
 
   for (const dictionaryKey of enabledDictionaries) {
-    let dictionary;
-    try {
-      dictionary = require(`dictionary-${dictionaryKey.toLowerCase()}`);
-    } catch {
-      // Error is ignored
-      continue;
-    }
-
-    if (dictionary) {
-      // Convert callback-based dictionary loading to Promise
-      const loadPromise = new Promise((resolve, reject) => {
-        dictionary((err, {aff, dic}) => {
-          if (err) {
-            reject(err);
-          } else {
-            try {
-              dictionaries.push(new Nodehun(aff, dic));
-              loadedDictionaries.add(dictionaryKey);
-              resolve();
-            } catch (error) {
-              reject(error);
-            }
-          }
-        });
-      }).catch(() => {
+    const loadPromise = (async () => {
+      const packageName = `dictionary-${dictionaryKey.toLowerCase()}`;
+      let dictExport;
+      try {
+        dictExport = require(packageName);
+      } catch {
+        // require() failed (ESM-only package) — fall back to dynamic import
+        try {
+          const module = await import(packageName);
+          dictExport = module.default;
+        } catch {
+          return; // Package not found or other error — skip
+        }
+      }
+      try {
+        if (typeof dictExport === 'function') {
+          // Legacy callback-based API
+          await new Promise((resolve, reject) => {
+            dictExport((err, {aff, dic}) => {
+              if (err) {
+                reject(err);
+              } else {
+                try {
+                  dictionaries.push(new Nodehun(aff, dic));
+                  loadedDictionaries.add(dictionaryKey);
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              }
+            });
+          });
+        } else {
+          // ESM API: export is {aff, dic}
+          const {aff, dic} = dictExport;
+          dictionaries.push(new Nodehun(Buffer.from(aff), Buffer.from(dic)));
+          loadedDictionaries.add(dictionaryKey);
+        }
+      } catch {
         // Error is ignored
-      });
-
-      loadPromises.push(loadPromise);
-    }
+      }
+    })();
+    loadPromises.push(loadPromise);
   }
 
   await Promise.all(loadPromises);

@@ -21,8 +21,8 @@ const DICTIONARY_TEST_DATA = [
   {langCode: 'fr', correctWords: ['bonjour', 'monde', 'maison', 'livre']},
   // {langCode: 'de', correctWords: ['hallo', 'welt', 'haus', 'buch']}, // Doesn't seem to load properly TODO
   {langCode: 'it', correctWords: ['ciao', 'mondo', 'casa', 'libro']},
-  {langCode: 'pt', correctWords: ['casa', 'livro', 'mundo']},
-  {langCode: 'pt-BR', correctWords: ['casa', 'livro', 'mundo']},
+  {langCode: 'pt', correctWords: ['casa', 'mundo', 'você']},
+  {langCode: 'pt-BR', correctWords: ['casa', 'mundo', 'você']},
   {langCode: 'ca', correctWords: ['casa', 'llibre']},
   {langCode: 'ca-valencia', correctWords: ['casa', 'llibre']},
   {langCode: 'eu', correctWords: ['mundua', 'etxea', 'liburua']},
