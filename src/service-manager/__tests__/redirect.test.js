@@ -215,6 +215,17 @@ describe('Service Manager Redirect module test suite', () => {
         // Then
         expect(result).toBe(false);
       });
+      test.each([
+        'https://login.microsoft.com/common/oauth2/v2.0/authorize',
+        'https://login.windows.net/common/oauth2/authorize'
+      ])('From Outlook to Microsoft sign-in (%s), should return false', url => {
+        // Given
+        mockViewUrl = 'https://outlook.office.com/mail/';
+        // When
+        const result = redirect.shouldOpenInExternalBrowser(webContentsView, new URL(url));
+        // Then
+        expect(result).toBe(false);
+      });
     });
     describe('Twitter login', () => {
       test('From Tweet Deck to Twitter, should return false', () => {
@@ -358,6 +369,64 @@ describe('Service Manager Redirect module test suite', () => {
       // Then
       expect(require('electron').shell.openExternal).toHaveBeenCalledWith('https://example.com/site-page');
       expect(result).toEqual({action: 'deny'});
+    });
+    describe('allowPopups=false', () => {
+      let result;
+      describe('scripted popup to a different origin', () => {
+        beforeEach(() => {
+          result = redirect.windowOpenHandler(webContentsView)({url: 'https://sso.example.com/login', disposition: 'new-window'});
+        });
+        test('denies the Electron popup', () => {
+          expect(result).toEqual({action: 'deny'});
+        });
+        test('opens the URL in the external browser', () => {
+          expect(require('electron').shell.openExternal).toHaveBeenCalledWith('https://sso.example.com/login');
+        });
+      });
+      describe('blank popup', () => {
+        beforeEach(() => {
+          result = redirect.windowOpenHandler(webContentsView)({url: 'about:blank', disposition: 'new-window'});
+        });
+        test('denies the Electron popup', () => {
+          expect(result).toEqual({action: 'deny'});
+        });
+        test('does not open the external browser', () => {
+          expect(require('electron').shell.openExternal).not.toHaveBeenCalledWith('about:blank');
+        });
+      });
+    });
+    describe('allowPopups=true', () => {
+      let handler;
+      let result;
+      beforeEach(() => {
+        handler = redirect.windowOpenHandler(webContentsView, {allowPopups: true});
+      });
+      describe('scripted popup to a different origin', () => {
+        beforeEach(() => {
+          result = handler({url: 'https://popup-sso.example.com/login', disposition: 'new-window'});
+        });
+        test('opens window in Electron popup', () => {
+          expect(result).toEqual({action: 'allow'});
+        });
+        test('does not open the external browser', () => {
+          expect(require('electron').shell.openExternal).not.toHaveBeenCalledWith('https://popup-sso.example.com/login');
+        });
+      });
+      test('blank popup, opens window in Electron popup', () => {
+        result = handler({url: 'about:blank', disposition: 'foreground-tab'});
+        expect(result).toEqual({action: 'allow'});
+      });
+      describe('target=_blank link to a different origin', () => {
+        beforeEach(() => {
+          result = handler({url: 'https://example.com/site-page', disposition: 'foreground-tab'});
+        });
+        test('denies the Electron popup', () => {
+          expect(result).toEqual({action: 'deny'});
+        });
+        test('opens the URL in the external browser', () => {
+          expect(require('electron').shell.openExternal).toHaveBeenCalledWith('https://example.com/site-page');
+        });
+      });
     });
   });
 });

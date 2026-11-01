@@ -67,6 +67,7 @@ const handleAdd = state => {
       disabled: false,
       sandboxed: false,
       openUrlsInApp: false,
+      allowPopups: false,
       disableNotifications: false,
       url: prependProtocol(state.newTabValue)
     }],

@@ -167,6 +167,18 @@ describe('Service Manager module test suite', () => {
       // Then
       expect(electron.WebContentsView.mock.results[0].value.webContents.setWindowOpenHandler).not.toHaveBeenCalled();
     });
+    describe('allowPopups=true', () => {
+      test('scripted popup to a different origin, should open it in an Electron popup', () => {
+        // Given
+        serviceManager.addServices({send: jest.fn()})([{id: 1337, url: 'https://localhost', allowPopups: true}]);
+        const {webContents} = electron.WebContentsView.mock.results[0].value;
+        const handler = webContents.setWindowOpenHandler.mock.calls[0][0];
+        // When
+        const result = handler({url: 'https://sso.example.com/login', disposition: 'new-window'});
+        // Then
+        expect(result).toEqual({action: 'allow'});
+      });
+    });
     test('openUrlsInApp=true, should not set will-navigate event handler', () => {
       // When
       serviceManager.addServices({send: jest.fn()})([{id: 1337, url: 'https://localhost', openUrlsInApp: true}]);

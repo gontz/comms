@@ -69,7 +69,7 @@ const addServices = ipcSender => servicesMetadata => {
   const useNativeSpellChecker = getUseNativeSpellChecker();
   const enabledDictionaries = getEnabledDictionaries();
   for (const {
-    id, url, sandboxed = false, openUrlsInApp = false
+    id, url, sandboxed = false, openUrlsInApp = false, allowPopups = false
   } of servicesMetadata) {
     const servicePreferences = {...defaultWebPreferences};
     if (sandboxed) {
@@ -98,7 +98,7 @@ const addServices = ipcSender => servicesMetadata => {
 
     if (!openUrlsInApp) {
       service.webContents.on('will-navigate', handleRedirect(service));
-      service.webContents.setWindowOpenHandler(windowOpenHandler(service));
+      service.webContents.setWindowOpenHandler(windowOpenHandler(service, {allowPopups}));
     }
 
     const handlePageTitleUpdatedForCurrentService = handlePageTitleUpdated(ipcSender, id);

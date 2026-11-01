@@ -526,6 +526,29 @@ describe('Settings in Browser test suite', () => {
             expect($switch.classList).not.toContain('switch--checked');
           });
         });
+        describe('with allowPopups unset', () => {
+          let $settingsTab;
+          let $switch;
+          beforeEach(async () => {
+            $settingsTab = document.querySelector('.settings__tab[data-id="1"]');
+            const $toggleIcon = $settingsTab.querySelector('.expand-button');
+            if ($toggleIcon.title.startsWith('Expand')) {
+              fireEvent.click($toggleIcon);
+              await waitFor(() => expect($toggleIcon.title).toEqual('Collapse'));
+            }
+            $switch = $settingsTab.querySelector('.allow-popups-toggle .material3.switch');
+          });
+          test('switch is off', () => {
+            expect($switch.classList).not.toContain('switch--checked');
+          });
+          test('click on switch, should turn on', async () => {
+            // When
+            fireEvent.click($switch);
+            // Then
+            await waitFor(() => expect($switch.classList.contains('switch--checked')).toBe(true));
+            expect($switch.classList).toContain('switch--checked');
+          });
+        });
         describe('with openUrlsInApp=false', () => {
           let $settingsTab;
           let $toggleIcon;

@@ -32,7 +32,9 @@ const isOAuth = matchUrls([
   /^https:\/\/accounts\.google\.com\/.*/, // NOSONAR
   /^https:\/\/account\.live\.com\/.*/, // NOSONAR
   /^https:\/\/login\.live\.com\/.*/, // NOSONAR
+  /^https:\/\/login\.microsoft\.com\/.*/, // NOSONAR
   /^https:\/\/login\.microsoftonline\.com\/.*/, // NOSONAR
+  /^https:\/\/login\.windows\.net\/.*/, // NOSONAR
   /^https:\/\/auth\.openai\.com\/.*/, // NOSONAR
   /^https:\/\/auth0\.openai\.com\/.*/, // NOSONAR
   /^https:\/\/auth\.redhat\.com\/auth\/.*/, // NOSONAR
@@ -92,8 +94,16 @@ const handleRedirect = view => {
   };
 };
 
-const windowOpenHandler = view => {
-  return ({url}) => {
+// A scripted popup: window.open() with window features (the way sign-in flows such as MSAL open
+// their login window), or a blank window the page is about to navigate. Regular links with
+// target="_blank" arrive as 'foreground-tab'/'background-tab' and keep going to the browser.
+const isPopup = ({url, disposition}) => disposition === 'new-window' || url === 'about:blank';
+
+const windowOpenHandler = (view, {allowPopups = false} = {}) => {
+  return ({url, disposition}) => {
+    if (allowPopups && isPopup({url, disposition})) {
+      return {action: 'allow'};
+    }
     if (!shouldOpenInExternalBrowser(view, new URL(url))) {
       return {action: 'allow'};
     }

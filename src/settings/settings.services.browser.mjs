@@ -34,7 +34,7 @@ const ExpandButton = ({dispatch, id, expanded = false}) => {
 };
 
 const TabAdvancedSettings = (
-  {dispatch, id, sandboxed = false, openUrlsInApp = false, customName = ''}
+  {dispatch, id, sandboxed = false, openUrlsInApp = false, allowPopups = false, customName = ''}
 ) => html`
   <div class='settings__tab-advanced'>
     <${SettingsRow} data-testid='settings-services-custom-tab-name'>
@@ -60,6 +60,14 @@ const TabAdvancedSettings = (
         label='Open URLs in app'
         className='open-urls-in-app-toggle'
         title='Open URLs within ElectronIM instead of opening them in the default system browser'
+    />
+    <${SettingsOption}
+        onClick=${toggleTabProperty(dispatch, 'allowPopups', id)}
+        checked=${allowPopups}
+        icon=${Icon.openInNew}
+        label='Allow popups'
+        className='allow-popups-toggle'
+        title='Open popup windows (e.g. Microsoft sign-in) within ElectronIM instead of blocking them or sending them to the default system browser'
     />
   </div>
 `;
