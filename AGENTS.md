@@ -8,8 +8,16 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Requirements
 
-- **Node.js**: v22.x (LTS) - [Download](https://nodejs.org/en/download/)
-  Seems like newer Node.js versions (v24+) have some issues with Jest and native modules.
+- **Node.js**: v22.x (LTS) or newer - [Download](https://nodejs.org/en/download/)
+  Node v22, v24 and v26 all work. The floor is set by eslint 10
+  (`^20.19.0 || ^22.13.0 || >=24`) and electron 44 (`>= 22.12.0`); CI uses v22.x.
+  Node v26 used to leave an unusable electron install, because the `extract-zip` that
+  electron's postinstall relied on stalled part way through extraction and never settled,
+  so `node_modules/electron/path.txt` was never written and every suite that loads
+  `src/settings/index.js` failed in `getElectronPath`. electron 44 replaced that extractor
+  and the problem is gone. Note `nodehun` is a native node-gyp addon with no prebuilds, so
+  it has to be rebuilt when the Node ABI changes:
+  `npx node-gyp@11 rebuild --directory=node_modules/nodehun`.
 
 ### Bootstrap and Setup
 Run these commands to set up the development environment:
@@ -26,7 +34,7 @@ npm install  # Install dependencies - takes ~55 seconds
 - `npm run build:win` - Builds and bundles the application for Windows systems
 
 ### Testing
-- `npm test` - Run full test suite - takes ~13 seconds, runs 1072 tests (58 test suites). NEVER CANCEL - Set timeout to 30+ minutes.
+- `npm test` - Run full test suite - takes ~10 seconds, runs 1221 tests (64 test suites). NEVER CANCEL - Set timeout to 30+ minutes.
 - `npm run test:e2e` - Run end-to-end tests to verify application startup - takes ~10-15 seconds
 - The project uses Jest with ECMAScript modules requiring the experimental VM modules flag for Node.js
 
@@ -44,6 +52,10 @@ npm install  # Install dependencies - takes ~55 seconds
 - `npm run build:linux` - Build Linux packages (AppImage, snap, tar.gz). NEVER CANCEL - May take 30+ minutes. Set timeout to 60+ minutes.
 - `npm run build:mac` - Build macOS packages (dmg, tar.gz)  
 - `npm run build:win` - Build Windows packages (zip, portable exe)
+- `npm run build:linux -- dir` - Build only the given electron-builder targets (e.g. `dir`, `snap`, `AppImage tar.gz`). The platform flag is the last argument of each `build:*` script so extra arguments become its targets; the `prebuild:*` hook still bundles with webpack first. Never call `electron-builder` directly, it skips that hook.
+- Bundling happens only in `pretest`, `pretest:e2e`, `prestart`, `prepack` and the `prebuild:*` hooks, not on `npm install`.
+- The Linux release artifacts (AppImage, tar.gz) are built in an `ubuntu:22.04` container, both in `publish.yml` and in the `Linux Build` job of `tests.yml`. nodehun is compiled on the build system and links against its glibc and libstdc++, so a build on a newer system ships a spell checker that doesn't load on older distributions. `./utils/check-glibc.sh` fails the build when a native binary needs more than Ubuntu 22.04 provides (it reads the symbol versions with `readelf`, from binutils). `tests.yml` extracts the AppImage and checks all of it, `publish.yml` checks `dist` only, because that job holds a token that can publish releases and shouldn't run the artifact it is about to upload. That token only reaches the upload steps, never `npm install`. `UBUNTU` in `utils/check-glibc.sh` names the release both jobs build on, and a test fails when the workflows' `container:` drifts from it.
+- `build.linux.extraFiles` applies to every Linux target. The snap template brings its own `usr/`, so in the snap these files end up in an unused `usr_1/`, and the Copr RPM gets a copy under `/opt/electronim/usr`; both are harmless. The tar.gz is the one artifact whose `usr/share` tree a user can install, which is why the entry it ships is `build-config/electronim.package.desktop` (relative `Exec`/`Icon`) and not the RPM's `/opt/electronim` one.
 - **IMPORTANT**: Build commands fail in environments with network restrictions due to Electron header downloads (node-gyp attempting to download from https://www.electronjs.org/headers). Document this limitation if builds fail with "network connectivity" errors.
 
 ## Validation
@@ -94,6 +106,11 @@ The project includes E2E tests to verify the complete Electron application stack
 - **Help Dialog E2E Tests** (`src/__tests__/help.test.e2e.js`) - Tests Help dialog functionality
 - **Keyboard Shortcuts E2E Tests** (`src/__tests__/keyboard-shortcuts.test.e2e.js`) - Tests keyboard shortcuts functionality
 - **Task Manager E2E Tests** (`src/__tests__/task-manager.test.e2e.js`) - Tests task manager functionality
+- **Screen Sharing E2E Tests** (`src/__tests__/screen-sharing.test.e2e.js`) - Tests screen-sharing source selection
+
+`npm run test:e2e` runs 131 tests across these 7 suites. They drive the real application, so
+they catch things the unit suite cannot: **always run them when changing anything under
+`src/__tests__/` or bumping `playwright`/`electron`.**
 
 ## Technical Architecture
 
@@ -134,7 +151,9 @@ The project includes E2E tests to verify the complete Electron application stack
 - `build-config/` - Platform-specific build configurations
   - `chocolateyInstall.ps1` - [PowerShell](https://blog.marcnuri.com/tag/powershell) installation script for [Chocolatey](https://chocolatey.org/) (Windows)
   - `chocolateyUninstall.ps1` - [PowerShell](https://blog.marcnuri.com/tag/powershell) installation script for [Chocolatey](https://chocolatey.org/) (Windows)
-  - `electronim.desktop` - Desktop entry configuration (Linux)
+  - `com.marcnuri.electronim.appdata.xml` - [AppStream](https://www.freedesktop.org/software/appstream/docs/) metainfo, installed in `usr/share/metainfo` of the Linux packages. The [AppImage catalog](https://appimage.github.io/) reads it, so update it whenever the README.md features change. Validate it with `appstreamcli validate-tree <application directory>`, which also checks that the desktop file it launches is installed; plain `appstreamcli validate` cannot. `utils/version-from-tag.js` stamps its `<releases>` at release time, since the version is only known then, and the RPM installs it in `%{_metainfodir}` (Linux)
+  - `electronim.desktop` - Desktop entry configuration of the [Fedora COPR package](https://copr.fedorainfracloud.org/coprs/manusa/electronim), which installs to `/opt/electronim` (Linux)
+  - `electronim.package.desktop` - Desktop entry installed in `usr/share/applications` of the AppImage, tar.gz and snap, because the AppStream metainfo launches it. Keep it in sync with `build.linux` of package.json, there are tests for that (Linux)
   - `electronim.nuspec` - [Chocolatey](https://chocolatey.org/) Nuspec information file (should be updated whenever the README.md is updated) (Windows)
   - `electronim.spec` - Spec file to build the [Fedora COPR package](https://copr.fedorainfracloud.org/coprs/manusa/electronim) (Linux)
   - `entitlements.mac.plist` Contains the MacOS entitlements for the application (Mac)
@@ -155,11 +174,28 @@ The project includes E2E tests to verify the complete Electron application stack
 
 ## Common Tasks
 
+### The one-liner that describes the application
+
+The same sentence is the `<summary>` of the AppStream metainfo, the `description` of package.json
+(which electron-builder turns into the `Comment` of the desktop entry it generates), the
+`build.snap.summary`, the `build.linux.synopsis`, the `Summary:` of `build-config/electronim.spec`
+and the `Comment` of both desktop entries in `build-config`. Change them together, or stores show a
+different sentence for each package. Keep it short: software centers cut it off, and Flathub asks
+for 35 characters or fewer.
+
 ### Adding Dependencies
 - Production dependencies: `npm install --save-exact <package>` 
 - Development dependencies: `npm install --save-exact -D <package>`
 - Always run `npm run pretest` after adding dependencies
 - Pin dependencies to the patch version (i.e. don't reference dependencies using ~ or ^)
+
+#### Dependencies deliberately held back
+
+One dependency is pinned below its latest release on purpose. Check here before "fixing" it:
+
+- **`dictionary-pt-br` (1.2.2)**. 2.0.1 adds `FORBIDDENWORD` on top of non-ASCII UTF-8 affix
+  flags, which nodehun's hunspell misassociates, so common words (`casa`, `livro`, `mundo`)
+  are all reported misspelled. The dictionary worker test catches this.
 
 ### Working with Settings
 The settings system uses Preact components with Material Design 3 styling:
@@ -255,7 +291,7 @@ The project provides several utilities in `src/__tests__/` to facilitate testing
 
 - **npm install**: ~55 seconds
 - **Linting and bundling** (`npm run pretest`): ~2 seconds
-- **Test suite** (`npm test`): ~13 seconds (1072 tests, 58 test suites)
+- **Test suite** (`npm test`): ~10 seconds (1221 tests, 64 test suites)
 - **Application startup**: ~3-5 seconds
 - **Platform builds**: 10-20 minutes (network dependent)
 
@@ -298,16 +334,16 @@ The application can aggregate services like WhatsApp Web, Telegram Web, Slack, a
 ### Sample npm install Output
 ```
 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
-added 872 packages, and audited 873 packages in 55s
+added 825 packages, and audited 826 packages in 55s
 155 packages are looking for funding
-5 vulnerabilities (1 low, 2 moderate, 2 high)
+13 vulnerabilities (5 moderate, 8 high)
 ```
 
 ### Sample Test Output
 ```
-Test Suites: 58 passed, 58 total
-Tests:       1072 passed, 1072 total
+Test Suites: 64 passed, 64 total
+Tests:       1221 passed, 1221 total
 Snapshots:   0 total
 Time:        12.653 s
-Coverage:    Lines: ~96% | Functions: ~94% | Branches: ~89% | Statements: ~96%
+Coverage:    Lines: ~91% | Functions: ~74% | Branches: ~46% | Statements: ~79%
 ```

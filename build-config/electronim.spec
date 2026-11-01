@@ -6,7 +6,7 @@
 Name: electronim
 Version: 0.0.0
 Release: 0%{?dist}
-Summary: Electron based multi IM (Instant Messaging) client
+Summary: Combine chat services in one window
 License: Apache-2.0
 Url: https://github.com/manusa/electronim
 # Tag sources
@@ -26,7 +26,14 @@ BuildRequires: git-core
 BuildRequires: make
 BuildRequires: libglvnd-devel
 BuildRequires: libxcrypt-compat
-ExclusiveArch: x86_64
+ExclusiveArch: x86_64 aarch64
+
+# electron-builder only suffixes the unpacked directory for non-x64 architectures
+%ifarch aarch64
+%global unpacked_dir dist/linux-arm64-unpacked
+%else
+%global unpacked_dir dist/linux-unpacked
+%endif
 
 %description
 Electron based multi IM (Instant Messaging) client - Improve your productivity by combining all your instant messaging
@@ -40,15 +47,25 @@ applications (or whatever you want) into a single browser (Electron) window.
 npm install
 #TODO automate or remove GITHUB_REF workaround
 GITHUB_REF=refs/tags/v%{version} node ./utils/version-from-tag.js
-npm run build:linux
+# Only the unpacked application is packaged. Copr also builds older tags with this spec, and
+# the --dir flag works whatever the argument order of their build:linux script.
+npm run build:linux -- --dir
+# electron-builder ignores --dir when build:linux lists its own targets, fail instead of
+# silently building (and racing) packages this RPM doesn't use
+unexpected=$(find dist -mindepth 1 -maxdepth 1 ! -path '%{unpacked_dir}' ! -name builder-effective-config.yaml ! -name builder-debug.yml)
+if [ -n "$unexpected" ] || [ ! -d %{unpacked_dir} ]; then
+  echo "error: expected dist to contain only %{unpacked_dir}, build:linux must not list targets" >&2
+  ls -1 dist >&2
+  exit 1
+fi
 
 # Remove bin files that might collision with local system binaries
-rm -f dist/linux-unpacked/resources/app.asar.unpacked/node_modules/nodehun/build/node_gyp_bins/python3
+rm -f %{unpacked_dir}/resources/app.asar.unpacked/node_modules/nodehun/build/node_gyp_bins/python3
 
 %install
 # install everything to /opt/%%{pkg_name}
 install -dp %{buildroot}%{_optpkgdir}
-cp -Rp dist/linux-unpacked/* %{buildroot}%{_optpkgdir}
+cp -Rp %{unpacked_dir}/* %{buildroot}%{_optpkgdir}
 install -d %{buildroot}%{_optpkgdir}/assets
 cp -Rp src/assets/* %{buildroot}%{_optpkgdir}/assets
 install -m0755 -d %{buildroot}%{_bindir}
@@ -58,14 +75,25 @@ ln -sf %{_optpkgdir}/electronim %{buildroot}%{_bindir}/electronim
 install -dp %{buildroot}%{_datadir}/applications
 install -Dp -m0755 build-config/electronim.desktop %{buildroot}%{_datadir}/applications
 
+# install AppStream metainfo, so that software centers list the application. The build:linux script
+# also copies it (and a desktop file of its own) into the unpacked application, where nothing reads
+# them. Copr builds older tags, which have neither, with this same spec, so %%files takes the
+# metainfo from a list only written when it exists. rpm rejects an empty list, hence the binary.
+echo "%{_bindir}/electronim" > packaged.files
+if [ -f build-config/com.marcnuri.electronim.appdata.xml ]; then
+  install -Dp -m0644 build-config/com.marcnuri.electronim.appdata.xml \
+    %{buildroot}%{_metainfodir}/com.marcnuri.electronim.appdata.xml
+  echo "%{_metainfodir}/com.marcnuri.electronim.appdata.xml" >> packaged.files
+fi
+rm -rf %{buildroot}%{_optpkgdir}/usr
+
 
 #-- FILES ---------------------------------------------------------------------#
-%files
+%files -f packaged.files
 %license LICENSE
 %doc CONTRIBUTING.md README.md
 %{_optpkgdir}/*
 %dir %{_datadir}/applications
 %{_datadir}/applications/%{name}.desktop
-%{_bindir}/electronim
 
 

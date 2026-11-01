@@ -16,7 +16,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-const {spawnElectron, createTestServer} = require('./');
+const {spawnElectron, createTestServer, expect} = require('./');
 
 // In CI environments, desktopCapturer.getSources() may return empty results
 // because there's no real display available (even with Xvfb).
@@ -232,6 +232,7 @@ describe('E2E :: Screen sharing test suite', () => {
             async () => !(await isOverlayVisible()),
             {timeout: 10000, interval: 100, message: 'Overlay did not close after selecting source'}
           );
+          expect(await isOverlayVisible()).toBe(false);
         });
 
         test('screen sharing status shows success', async () => {
@@ -293,6 +294,7 @@ describe('E2E :: Screen sharing test suite', () => {
             async () => !(await isOverlayVisible()),
             {timeout: 10000, interval: 100, message: 'Overlay did not close after clicking background'}
           );
+          expect(await isOverlayVisible()).toBe(false);
         });
 
         test('screen sharing status shows cancellation error', async () => {

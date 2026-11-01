@@ -16,7 +16,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-const {spawnElectron, createTestServer} = require('./index');
+const {spawnElectron, createTestServer, expect} = require('./index');
 
 describe('E2E :: Task Manager test suite', () => {
   let electron;

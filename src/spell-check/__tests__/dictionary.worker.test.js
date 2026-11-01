@@ -15,14 +15,14 @@
  */
 
 const DICTIONARY_TEST_DATA = [
-  {langCode: 'en', correctWords: ['hello', 'world', 'test', 'computer']},
+  {langCode: 'en', correctWords: ['hello', 'world', 'test', 'computer'], suggestion: {misspelled: 'helo', expected: 'hello'}},
   {langCode: 'en-GB', correctWords: ['colour', 'programme', 'centre']},
-  {langCode: 'es', correctWords: ['hola', 'mundo', 'casa', 'libro']},
-  {langCode: 'fr', correctWords: ['bonjour', 'monde', 'maison', 'livre']},
-  // {langCode: 'de', correctWords: ['hallo', 'welt', 'haus', 'buch']}, // Doesn't seem to load properly TODO
-  {langCode: 'it', correctWords: ['ciao', 'mondo', 'casa', 'libro']},
-  {langCode: 'pt', correctWords: ['casa', 'mundo', 'você']},
-  {langCode: 'pt-BR', correctWords: ['casa', 'mundo', 'você']},
+  {langCode: 'es', correctWords: ['hola', 'mundo', 'casa', 'libro'], suggestion: {misspelled: 'mundoo', expected: 'mundo'}},
+  {langCode: 'fr', correctWords: ['bonjour', 'monde', 'maison', 'livre'], suggestion: {misspelled: 'bonjor', expected: 'bonjour'}},
+  {langCode: 'de', correctWords: ['hallo', 'Welt', 'Haus', 'Buch'], suggestion: {misspelled: 'Hauss', expected: 'Haus'}},
+  {langCode: 'it', correctWords: ['ciao', 'mondo', 'casa', 'libro'], suggestion: {misspelled: 'ciaoo', expected: 'ciao'}},
+  {langCode: 'pt', correctWords: ['casa', 'livro', 'mundo'], suggestion: {misspelled: 'livr', expected: 'livro'}},
+  {langCode: 'pt-BR', correctWords: ['casa', 'livro', 'mundo']},
   {langCode: 'ca', correctWords: ['casa', 'llibre']},
   {langCode: 'ca-valencia', correctWords: ['casa', 'llibre']},
   {langCode: 'eu', correctWords: ['mundua', 'etxea', 'liburua']},
@@ -30,14 +30,19 @@ const DICTIONARY_TEST_DATA = [
   {langCode: 'sv', correctWords: ['hus', 'bok']},
   {langCode: 'pl', correctWords: ['dom']},
   {langCode: 'ru', correctWords: ['дом']},
-  // {langCode: 'uk', correctWords: ['дім']},  // Doesn't seem to load properly TODO
+  // dictionary-uk maps every latin character to the empty string through ICONV, so it accepts any
+  // latin token as correctly spelled and needs cyrillic gibberish here. That also means enabling it
+  // alongside a latin-script dictionary silently stops latin misspellings being reported: see #710.
+  {langCode: 'uk', correctWords: ['дім', 'мова'], misspelledWords: ['ъъъъъ', 'йцукенгш', 'щщщщщ']},
   {langCode: 'tr', correctWords: ['merhaba', 'ev', 'kitap']},
-  {langCode: 'lt', correctWords: ['labas', 'namai', 'knyga']},
+  {langCode: 'lt', correctWords: ['labas', 'namas', 'namai', 'knyga'], suggestion: {misspelled: 'nama', expected: 'namai'}},
   {langCode: 'ka', correctWords: ['სახლი']}
 ];
 
 // Common gibberish words that should be misspelled in any language
-// Using impossible letter combinations that no language would have
+// Using impossible letter combinations that no language would have.
+// A dictionary that accepts these (dictionary-uk accepts any latin-script token) overrides them
+// through the misspelledWords field above.
 const commonMisspelledWords = ['xqzxqz', 'bcdfghjklm', 'qqqqq'];
 
 describe('Dictionary Worker test suite', () => {
@@ -50,7 +55,7 @@ describe('Dictionary Worker test suite', () => {
 
   describe.each(DICTIONARY_TEST_DATA)(
     'Dictionary: $langCode',
-    ({langCode, correctWords}) => {
+    ({langCode, correctWords, misspelledWords = commonMisspelledWords, suggestion}) => {
       let loadedDictionaries;
 
       beforeAll(async () => {
@@ -84,12 +89,12 @@ describe('Dictionary Worker test suite', () => {
         });
 
         test('detects gibberish as misspelled', async () => {
-          const misspelled = await globalThis.getMisspelled(commonMisspelledWords);
-          expect(misspelled).toEqual([...commonMisspelledWords]);
+          const misspelled = await globalThis.getMisspelled(misspelledWords);
+          expect(misspelled).toEqual([...misspelledWords]);
         });
 
         test('correctly identifies misspelled words in mixed list', async () => {
-          const mixedWords = [...correctWords, ...commonMisspelledWords];
+          const mixedWords = [...correctWords, ...misspelledWords];
           const misspelled = await globalThis.getMisspelled(mixedWords);
 
           // Correct words should not be in misspelled list
@@ -114,23 +119,35 @@ describe('Dictionary Worker test suite', () => {
       });
 
       describe('getSuggestions functionality', () => {
+        beforeAll(async () => {
+          settings.updateSettings({enabledDictionaries: [langCode]});
+          await globalThis.reloadDictionaries();
+        });
+
         test('provides suggestions for misspelled words', async () => {
-          const suggestions = await globalThis.getSuggestions(commonMisspelledWords[0]);
+          const suggestions = await globalThis.getSuggestions(misspelledWords[0]);
 
           expect(Array.isArray(suggestions)).toBe(true);
           // Suggestions might be empty for complete gibberish, which is acceptable
         });
 
+        if (suggestion) {
+          test('suggests the correct spelling for a misspelled word', async () => {
+            const suggestions = await globalThis.getSuggestions(suggestion.misspelled);
+            expect(suggestions).toContain(suggestion.expected);
+          });
+        }
+
         test('limits suggestions to 10 or fewer', async () => {
           // Use a word that might have many suggestions
-          const suggestions = await globalThis.getSuggestions(commonMisspelledWords[0]);
+          const suggestions = await globalThis.getSuggestions(misspelledWords[0]);
 
           expect(Array.isArray(suggestions)).toBe(true);
           expect(suggestions.length).toBeLessThanOrEqual(10);
         });
 
         test('returns sorted suggestions', async () => {
-          const suggestions = await globalThis.getSuggestions(commonMisspelledWords[0]);
+          const suggestions = await globalThis.getSuggestions(misspelledWords[0]);
 
           if (suggestions.length > 1) {
             // Verify suggestions are sorted

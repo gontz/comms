@@ -17,7 +17,7 @@
   limitations under the License.
 */
 
-const {spawnElectron} = require('./');
+const {spawnElectron, expect} = require('./');
 
 describe('E2E :: First-time install test suite', () => {
   describe('on first launch with no configured services', () => {

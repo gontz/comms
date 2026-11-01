@@ -47,15 +47,33 @@ function toVirtualKeyCode(key) {
   return keyCodes[key] || key.codePointAt(0);
 }
 
+const {kill: killApp} = require('./e2e-watchdog');
+
+// Playwright starts the application in a session of its own, so an interrupted run leaves the whole
+// application behind: the Ctrl+C goes to the runner's process group and never reaches it. It cannot
+// be cleaned up from here either, because jest hands tests a copy of `process` whose signal and exit
+// handlers never see the real ones. A detached watchdog does it from outside jest instead.
+const startWatchdog = appPid => {
+  const {spawn} = require('node:child_process');
+  const path = require('node:path');
+  const watchdog = spawn(
+    process.execPath,
+    [path.resolve(__dirname, 'e2e-watchdog.js'), String(process.pid), String(appPid)],
+    {detached: true, stdio: 'ignore'}
+  );
+  // Without a listener a failed spawn raises an unhandled 'error' event, which would take the whole
+  // run down over a best-effort safety net. Losing the watchdog only costs cleanup on an
+  // interrupted run, so report it and carry on.
+  watchdog.on('error', error => console.warn('E2E watchdog could not be started', error));
+  watchdog.unref();
+  return watchdog;
+};
+
 const spawnElectron = async ({extraArgs = [], settings} = {}) => {
   const {_electron: electron} = require('playwright');
   const path = require('node:path');
   const fs = require('node:fs');
   const os = require('node:os');
-  // Add playwright global expectations
-  // Extend Jest's expect with Playwright matchers
-  const {expect: playwrightExpect} = require('@playwright/test');
-  globalThis.expect = Object.assign(globalThis.expect, playwrightExpect);
   // Set environment for testing
   process.env.NODE_ENV = 'test';
   process.env.DISPLAY = process.env.DISPLAY || ':99';
@@ -88,24 +106,24 @@ const spawnElectron = async ({extraArgs = [], settings} = {}) => {
     env: {...process.env}
   });
 
+  if (electronApp.process()?.pid) {
+    startWatchdog(electronApp.process().pid);
+  }
+
   const instance = {
     tempDir,
     app: electronApp,
     kill: async () => {
       // First kill the electron process to release any file locks
       if (electronApp?.process()?.pid) {
-        try {
-          // eslint-disable-next-line no-warning-comments
-          // TODO: electronApp.close() doesn't work when tray icon is enabled, using SIGKILL directly
-          // This is because the tray prevents graceful shutdown. Consider adding a test-specific
-          // flag to disable tray in E2E tests for proper graceful shutdown testing.
-          // await electronApp.close();
-          process.kill(electronApp?.process()?.pid, 'SIGKILL');
-          // Wait a bit for process to fully terminate and release file handles
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch {
-          // Process already dead
-        }
+        // eslint-disable-next-line no-warning-comments
+        // TODO: electronApp.close() doesn't work when tray icon is enabled, using SIGKILL directly
+        // This is because the tray prevents graceful shutdown. Consider adding a test-specific
+        // flag to disable tray in E2E tests for proper graceful shutdown testing.
+        // await electronApp.close();
+        killApp(electronApp.process().pid);
+        // Wait a bit for process to fully terminate and release file handles
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       // Clean up temporary directory
       if (instance.tempDir && fs.existsSync(instance.tempDir)) {
@@ -264,6 +282,29 @@ const spawnElectron = async ({extraArgs = [], settings} = {}) => {
         }
         // Check if any child view has the isFindInPage property
         return contentView.children.some(child => child.isFindInPage === true);
+      });
+    },
+    /**
+     * Check if the app menu is currently ATTACHED to the main window.
+     *
+     * Distinct from "an app-menu window exists": the menu is built ahead of the click and lives as
+     * an unattached view until it is opened, so a renderer with the app-menu URL can be present
+     * while the menu is closed. Only attachment says it was actually opened.
+     *
+     * Note this still cannot say the menu is VISIBLE - an attached view can composite nothing while
+     * its renderer stays healthy. See the comment in app-menu.test.e2e.js.
+     */
+    isAppMenuOpen: async () => {
+      return await electronApp.evaluate(async ({BaseWindow}) => {
+        const window = BaseWindow.getAllWindows()[0];
+        if (!window) {
+          return false;
+        }
+        const contentView = window.contentView;
+        if (!contentView?.children) {
+          return false;
+        }
+        return contentView.children.some(child => child.isAppMenu === true);
       });
     },
     /**

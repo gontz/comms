@@ -1,23 +1,24 @@
 import jest from 'eslint-plugin-jest';
 import globals from 'globals';
-import path from 'node:path';
-import {fileURLToPath} from 'node:url';
 import js from '@eslint/js';
-import {FlatCompat} from '@eslint/eslintrc';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all
-});
 
 export default [
   {
     ignores: ['.idea/**/*', 'bundles/**/*', 'coverage/**/*', 'dist/**/*', 'node_modules/**/*']
   },
-  ...compat.extends('eslint:recommended'),
+  js.configs.recommended,
+  {
+    // The e2e suites assert with Playwright's matchers, which Jest's global expect does not carry.
+    // Banning the global here turns forgetting the import into a lint error rather than a matcher
+    // that is missing only at runtime, in a suite that takes minutes to fail.
+    files: ['src/__tests__/*.e2e.js'],
+    rules: {
+      'no-restricted-globals': [2, {
+        name: 'expect',
+        message: 'Import expect from the test helpers (const {expect} = require(\'./\');), Jest\'s global lacks the Playwright matchers.'
+      }]
+    }
+  },
   {
     plugins: {
       jest

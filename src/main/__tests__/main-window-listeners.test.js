@@ -106,6 +106,7 @@ describe('Main :: Main window listeners test suite', () => {
     describe('restore (required for windows when starting minimized)', () => {
       let mockAppMenu;
       beforeEach(async () => {
+        electron.ipcMain.emit('appMenuOpen');
         mockAppMenu = appMenuModule.newAppMenu.mock.results[0].value;
       });
       test('should set app-menu bounds', async () => {
@@ -142,28 +143,33 @@ describe('Main :: Main window listeners test suite', () => {
         expect(settings.loadSettings()).toEqual(expect.objectContaining({width: 13, height: 37}));
       });
       describe('app-menu', () => {
-        let mockAppMenu;
-        beforeEach(async () => {
-          mockAppMenu = appMenuModule.newAppMenu.mock.results[0].value;
-        });
-        test('should set app-menu bounds', async () => {
+        test('should ignore if closed (the app-menu is built ahead of open, but only attached while open)', async () => {
           // Given
-          const setBoundsPromise = new Promise(resolve => {
-            mockAppMenu.setBounds = jest.fn(resolve);
+          const pendingAppMenu = appMenuModule.newAppMenu.mock.results[0].value;
+          // When
+          baseWindow.emit('resize', {sender: baseWindow});
+          await baseWindowGetContentBounds;
+          // Then
+          expect(pendingAppMenu.setBounds).not.toHaveBeenCalled();
+          expect(baseWindow.contentView.children.some(cv => cv.isAppMenu)).toBe(false);
+        });
+        describe('while open', () => {
+          let mockAppMenu;
+          beforeEach(async () => {
+            electron.ipcMain.emit('appMenuOpen');
+            mockAppMenu = appMenuModule.newAppMenu.mock.results[0].value;
           });
-          // When
-          baseWindow.emit('resize', {sender: baseWindow});
-          await setBoundsPromise;
-          // Then
-          expect(mockAppMenu.setBounds).toHaveBeenCalledWith({x: 0, y: 0, width: 10, height: 34});
-        });
-        test('should ignore if undefined (app might be resized before app-menu is initialized)', () => {
-          // Given
-          mockAppMenu.setBounds = null;
-          // When
-          baseWindow.emit('resize', {sender: baseWindow});
-          // Then
-          expect(baseWindow.setBounds).not.toHaveBeenCalled();
+          test('should set app-menu bounds', async () => {
+            // Given
+            const setBoundsPromise = new Promise(resolve => {
+              mockAppMenu.setBounds = jest.fn(resolve);
+            });
+            // When
+            baseWindow.emit('resize', {sender: baseWindow});
+            await setBoundsPromise;
+            // Then
+            expect(mockAppMenu.setBounds).toHaveBeenCalledWith({x: 0, y: 0, width: 10, height: 34});
+          });
         });
       });
       test('find-in-page, should set specific dialog bounds', () => {

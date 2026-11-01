@@ -16,7 +16,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-const {spawnElectron, createTestServer} = require('./');
+const {spawnElectron, createTestServer, expect} = require('./');
 
 describe('E2E :: Help dialog test suite', () => {
   describe('opening and displaying help information', () => {
