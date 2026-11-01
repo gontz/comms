@@ -13,6 +13,36 @@ Free/Libre open source Electron based multi instant messaging (IM) client.
 
 Combine all your IM applications (or whatever you want) in a single browser (Electron) window.
 
+## This fork
+
+This is a fork of [manusa/electronim](https://github.com/manusa/electronim), kept in sync with upstream. It adds:
+
+- 🪟 **Allow popups** (per service, under the service's advanced settings): popup windows opened by the page,
+  such as Microsoft sign-in windows, open inside ElectronIM instead of being blocked.
+  Ordinary links still open in your default browser.
+- 🔑 **Passkey fallback**: Electron has no passkey ("Face, fingerprint, PIN or security key") dialog, so on Linux
+  and macOS those requests used to hang the sign-in. They now fail straight away, as if cancelled, so sites
+  such as Microsoft offer their other sign-in methods (Authenticator app, code, password).
+  Windows is unchanged, as it uses the native Windows Hello dialog.
+- 🕵️ A clean Chrome user-agent for every service.
+- 🎨 A new application icon.
+
+To sync with upstream:
+
+```
+git remote add upstream https://github.com/manusa/electronim.git   # once
+git fetch upstream && git merge upstream/main
+```
+
+To build and install the Linux AppImage locally:
+
+```
+npm install
+npx node-gyp@11 rebuild --directory=node_modules/nodehun   # npm 12 blocks nodehun's install script
+npm run build:linux -- AppImage
+cp dist/electronim-linux-x86_64.AppImage ~/.local/bin/electronim.AppImage
+```
+
 ## Quickstart
 
 Detailed guides for installation can be followed in our comprehensive [setup guide](docs/Setup.md).
