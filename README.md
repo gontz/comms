@@ -21,7 +21,7 @@ This is a fork of [manusa/electronim](https://github.com/manusa/electronim), kep
   such as Microsoft sign-in windows, open inside ElectronIM instead of being blocked.
   Ordinary links still open in your default browser.
 - 🔑 **Passkey fallback**: Electron has no passkey ("Face, fingerprint, PIN or security key") dialog, so on Linux
-  and macOS those requests used to hang the sign-in. They now fail straight away, as if cancelled, so sites
+  (and presumably macOS) those requests used to hang the sign-in. They now fail straight away, as if cancelled, so sites
   such as Microsoft offer their other sign-in methods (Authenticator app, code, password).
   Windows is unchanged, as it uses the native Windows Hello dialog.
 - 🕵️ A clean Chrome user-agent for every service.
