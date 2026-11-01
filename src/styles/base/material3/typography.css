@@ -346,10 +346,9 @@
   /* Display Large font name */
   --md-sys-typescale-display-large-font: var(--md-ref-typeface-brand);
   /* Plain typeface */
-  /* The Nerd Font build of Inclusive Sans when installed (Nerd icons included), else the bundled one */
-  --md-ref-typeface-plain: 'InclusiveSans Nerd Font Propo', 'Inclusive Sans', Roboto, sans-serif;
+  --md-ref-typeface-plain: 'Inclusive Sans', Roboto, sans-serif;
   /* Brand typeface */
-  --md-ref-typeface-brand: 'InclusiveSans Nerd Font Propo', 'Inclusive Sans', Roboto, sans-serif;
+  --md-ref-typeface-brand: 'Inclusive Sans', Roboto, sans-serif;
   /* Bold weight */
   --md-ref-typeface-weight-bold: 700;
   /* Medium weight */

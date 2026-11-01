@@ -16,16 +16,15 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const {protocol} = require('electron');
+const {loadSettings} = require('../settings');
 
 // Service pages are remote sites: they can't load fonts from the application files, and most of
 // them have a Content-Security-Policy whose font-src blocks data: URLs too. A privileged scheme
 // with bypassCSP is the one way to hand them the bundled interface font.
 const FONT_SCHEME = 'electronim-font';
 const FONT_FAMILY = 'ElectronIM Interface';
-// A locally installed font is not subject to the page's CSP. The Nerd Font build of Inclusive Sans
-// is preferred when installed (all weights, real italics and the Nerd icons); the bundled copy
-// served through FONT_SCHEME covers systems without it.
-const FONT_STACK = `'InclusiveSans Nerd Font Propo', '${FONT_FAMILY}', 'Inclusive Sans', Roboto, sans-serif`;
+const DEFAULT_INTERFACE_STACK = '\'Inclusive Sans\', Roboto, sans-serif';
+const CODE_ELEMENTS = 'code, pre, kbd, samp, tt';
 const FONTS_DIR = path.resolve(__dirname, '..', 'styles', 'base', 'fonts');
 const FONTS = [
   {
@@ -68,21 +67,69 @@ const addFontProtocol = session => {
   }
 };
 
-const fontOverrideCss = [
-  ...FONTS.map(({file, unicodeRange}) => `@font-face {
+// Optional fonts installed on this computer, named in settings.json (interfaceFontFamily and
+// codeFontFamily). Installed fonts are not subject to the pages' CSP. The value ends up in CSS, so
+// anything other than a plain family name is ignored.
+const fontFamily = name => {
+  const trimmed = typeof name === 'string' ? name.trim() : '';
+  return /^[\p{L}\p{N} _-]{1,100}$/u.test(trimmed) ? `'${trimmed}'` : null;
+};
+
+const customFonts = ({interfaceFontFamily, codeFontFamily} = {}) => ({
+  interfaceFont: fontFamily(interfaceFontFamily),
+  codeFont: fontFamily(codeFontFamily)
+});
+
+const codeFontRule = codeFont => (codeFont ?
+  `:is(${CODE_ELEMENTS}), :is(${CODE_ELEMENTS}) * {\n  font-family: ${codeFont}, monospace !important;\n}` : '');
+
+const fontOverrideCss = (settings = {}) => {
+  const {interfaceFont, codeFont} = customFonts(settings);
+  const stack = [interfaceFont, `'${FONT_FAMILY}'`, DEFAULT_INTERFACE_STACK].filter(Boolean).join(', ');
+  return [
+    ...FONTS.map(({file, unicodeRange}) => `@font-face {
   font-family: '${FONT_FAMILY}'; font-style: normal; font-weight: 300 700; font-display: swap;
   src: url('${FONT_SCHEME}://fonts/${file}') format('woff2'); unicode-range: ${unicodeRange};
 }`),
-  `*:not(${EXCLUDED}):not(:is(${EXCLUDED}) *) {
-  font-family: ${FONT_STACK} !important;
-}`
-].join('\n');
+    `*:not(${EXCLUDED}):not(:is(${EXCLUDED}) *) {\n  font-family: ${stack} !important;\n}`,
+    codeFontRule(codeFont)
+  ].filter(Boolean).join('\n');
+};
+
+// ElectronIM's own pages: override the Material 3 typeface variables
+const appFontCss = (settings = {}) => {
+  const {interfaceFont, codeFont} = customFonts(settings);
+  return [
+    interfaceFont && `:root {
+  --md-ref-typeface-plain: ${interfaceFont}, ${DEFAULT_INTERFACE_STACK} !important;
+  --md-ref-typeface-brand: ${interfaceFont}, ${DEFAULT_INTERFACE_STACK} !important;
+}`,
+    codeFontRule(codeFont)
+  ].filter(Boolean).join('\n');
+};
 
 // cssOrigin 'user': a user stylesheet's !important wins over the site's own !important rules
 const applyFontOverride = webContents => webContents
-  .insertCSS(fontOverrideCss, {cssOrigin: 'user'})
+  .insertCSS(fontOverrideCss(loadSettings()), {cssOrigin: 'user'})
   .catch(error => console.error('Error applying the interface font to a service', error));
 
+const isAppPage = webContents => (webContents.getURL() ?? '').startsWith('file:');
+
+// Listener for the app's web-contents-created event: applies the custom fonts to ElectronIM's pages
+const applyAppFonts = (_event, webContents) => {
+  webContents.on('dom-ready', () => {
+    if (!isAppPage(webContents)) {
+      return;
+    }
+    const css = appFontCss(loadSettings());
+    if (css) {
+      webContents.insertCSS(css)
+        .catch(error => console.error('Error applying the custom fonts to ElectronIM', error));
+    }
+  });
+};
+
 module.exports = {
-  FONT_SCHEME, addFontProtocol, applyFontOverride, fontOverrideCss, handleFontRequest, registerFontScheme
+  FONT_SCHEME, addFontProtocol, appFontCss, applyAppFonts, applyFontOverride, fontOverrideCss, handleFontRequest,
+  registerFontScheme
 };

@@ -28,9 +28,10 @@ This is a fork of [manusa/electronim](https://github.com/manusa/electronim), kep
 - 🎨 A new application icon.
 - 🔤 [Inclusive Sans](https://fonts.google.com/specimen/Inclusive+Sans) as the interface font (bundled, so no
   network is needed; SIL Open Font License, see `src/styles/base/fonts/inclusive-sans-OFL.txt`).
-  Roboto remains the fallback. When the [Nerd Font](https://www.nerdfonts.com/) build
-  *InclusiveSans Nerd Font Propo* is installed on the system it is used first (all weights, real italics and
-  the Nerd icons).
+  Roboto remains the fallback.
+  To use fonts installed on your computer instead, add them to `settings.json` (Settings → Other → open folder):
+  `"interfaceFontFamily": "<font name>"` for text and `"codeFontFamily": "<font name>"` for code. They apply to
+  ElectronIM itself, and to the services when the option below is on.
   Turn on **Settings → Appearance → Use the ElectronIM font in services** to apply it to the services' web pages
   too. Icons and code keep their own font; if a service looks wrong, turn it off again.
 
