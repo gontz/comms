@@ -25,6 +25,8 @@ This is a fork of [manusa/electronim](https://github.com/manusa/electronim), kep
   such as Microsoft offer their other sign-in methods (Authenticator app, code, password).
   Windows is unchanged, as it uses the native Windows Hello dialog.
 - 🕵️ A clean Chrome user-agent for every service.
+- 1️⃣ Single instance: launching ElectronIM again brings the running window to the front (also from the tray)
+  instead of starting a second copy. Separate profiles started with `--user-data` still run side by side.
 - 🎨 A new application icon.
 - 🔤 [Inclusive Sans](https://fonts.google.com/specimen/Inclusive+Sans) as the interface font (bundled, so no
   network is needed; SIL Open Font License, see `src/styles/base/fonts/inclusive-sans-OFL.txt`).

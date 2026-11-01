@@ -61,6 +61,50 @@ describe('Entrypoint test suite', () => {
         .toHaveBeenCalledWith('web-contents-created', require('../base-window').registerAppShortcuts);
     });
   });
+  describe('Single instance', () => {
+    let originalArgv;
+    beforeEach(() => {
+      originalArgv = process.argv;
+    });
+    afterEach(() => {
+      process.argv = originalArgv;
+    });
+    describe('first instance (lock acquired)', () => {
+      beforeEach(() => {
+        process.argv = ['node', 'electron', '--user-data', '/tmp/electronim-single-instance'];
+        require('../');
+      });
+      test('requests the lock after applying the custom user data directory', () => {
+        expect(app.requestSingleInstanceLock.mock.invocationCallOrder[0])
+          .toBeGreaterThan(app.setPath.mock.invocationCallOrder[0]);
+      });
+      test('does not quit', () => {
+        expect(app.quit).not.toHaveBeenCalled();
+      });
+      test('on second-instance, restores the main window', () => {
+        const ipcMain = require('electron').ipcMain;
+        const restore = jest.fn();
+        ipcMain.on('restore', restore);
+        app.on.mock.calls.find(([event]) => event === 'second-instance')[1]();
+        expect(restore).toHaveBeenCalledTimes(1);
+      });
+    });
+    describe('second instance (lock held by another instance)', () => {
+      beforeEach(() => {
+        app.requestSingleInstanceLock.mockReturnValue(false);
+        require('../');
+      });
+      test('quits', () => {
+        expect(app.quit).toHaveBeenCalledTimes(1);
+      });
+      test('does not initialize the application', () => {
+        expect(app.on).not.toHaveBeenCalledWith('ready', expect.anything());
+      });
+      test('does not register the font scheme', () => {
+        expect(require('electron').protocol.registerSchemesAsPrivileged).not.toHaveBeenCalled();
+      });
+    });
+  });
   describe('Custom settings path', () => {
     let originalArgv;
     let tmpDir;

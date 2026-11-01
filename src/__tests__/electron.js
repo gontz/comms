@@ -222,6 +222,8 @@ const mockElectronInstance = ({...overriddenProps} = {}) => {
       getPath: jest.fn(),
       on: jest.fn(),
       exit: jest.fn(),
+      quit: jest.fn(),
+      requestSingleInstanceLock: jest.fn(() => true),
       setPath: jest.fn()
     },
     clipboard: {
