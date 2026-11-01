@@ -15,6 +15,7 @@
  */
 require('./preload.notification-shim');
 require('./preload.mediadevices-shim');
+require('./preload.webauthn-shim');
 require('../base-window/preload.keyboard-shortcuts').initKeyboardShortcuts();
 require('./preload.spell-check').initSpellChecker()
   .catch(err => console.error('Error initializing spell check', err));
