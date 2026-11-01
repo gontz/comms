@@ -22,6 +22,10 @@ const {protocol} = require('electron');
 // with bypassCSP is the one way to hand them the bundled interface font.
 const FONT_SCHEME = 'electronim-font';
 const FONT_FAMILY = 'ElectronIM Interface';
+// A locally installed font is not subject to the page's CSP. The Nerd Font build of Inclusive Sans
+// is preferred when installed (all weights, real italics and the Nerd icons); the bundled copy
+// served through FONT_SCHEME covers systems without it.
+const FONT_STACK = `'InclusiveSans Nerd Font Propo', '${FONT_FAMILY}', 'Inclusive Sans', Roboto, sans-serif`;
 const FONTS_DIR = path.resolve(__dirname, '..', 'styles', 'base', 'fonts');
 const FONTS = [
   {
@@ -70,7 +74,7 @@ const fontOverrideCss = [
   src: url('${FONT_SCHEME}://fonts/${file}') format('woff2'); unicode-range: ${unicodeRange};
 }`),
   `*:not(${EXCLUDED}):not(:is(${EXCLUDED}) *) {
-  font-family: '${FONT_FAMILY}', 'Inclusive Sans', Roboto, sans-serif !important;
+  font-family: ${FONT_STACK} !important;
 }`
 ].join('\n');
 

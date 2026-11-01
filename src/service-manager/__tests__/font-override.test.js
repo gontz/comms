@@ -77,8 +77,9 @@ describe('Service Manager font override test suite', () => {
     test('declares the bundled font through the privileged scheme', () => {
       expect(fontOverride.fontOverrideCss).toContain('src: url(\'electronim-font://fonts/inclusive-sans-latin.woff2\')');
     });
-    test('overrides the font with !important', () => {
-      expect(fontOverride.fontOverrideCss).toMatch(/font-family: 'ElectronIM Interface'.*!important/);
+    test('prefers the installed Nerd Font build, then the bundled font, with !important', () => {
+      expect(fontOverride.fontOverrideCss)
+        .toMatch(/font-family: 'InclusiveSans Nerd Font Propo', 'ElectronIM Interface'.*!important/);
     });
     test.each(['code', 'pre', '[class*="icon" i]', '[class*="material" i]'])('excludes %s and its content', selector => {
       expect(fontOverride.fontOverrideCss).toMatch(new RegExp(String.raw`:not\([^)]*${RegExp.escape(selector)}`));
