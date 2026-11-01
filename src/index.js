@@ -23,6 +23,7 @@ const {registerAppShortcuts} = require('./base-window');
 const {parseSettingsPath, parseUserData} = require('./cli');
 const {init, quit} = require('./main');
 const {setSettingsPath} = require('./settings');
+const {registerFontScheme} = require('./service-manager/font-override');
 
 const args = process.argv.slice(process.defaultApp ? 2 : 1);
 // Parse command line arguments for custom user data directory
@@ -36,6 +37,8 @@ const customSettingsPath = parseSettingsPath(args);
 if (customSettingsPath) {
   setSettingsPath(customSettingsPath);
 }
+
+registerFontScheme();
 
 app.on('ready', init);
 app.on('quit', quit);

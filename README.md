@@ -29,6 +29,8 @@ This is a fork of [manusa/electronim](https://github.com/manusa/electronim), kep
 - 🔤 [Inclusive Sans](https://fonts.google.com/specimen/Inclusive+Sans) as the interface font (bundled, so no
   network is needed; SIL Open Font License, see `src/styles/base/fonts/inclusive-sans-OFL.txt`).
   Roboto remains the fallback.
+  Turn on **Settings → Appearance → Use the ElectronIM font in services** to apply it to the services' web pages
+  too. Icons and code keep their own font; if a service looks wrong, turn it off again.
 
 To sync with upstream:
 

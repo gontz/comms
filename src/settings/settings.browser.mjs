@@ -57,7 +57,8 @@ const Settings = ({initialState}) => {
     alwaysOnTop: state.alwaysOnTop,
     closeButtonBehavior: state.closeButtonBehavior,
     keyboardShortcuts: state.keyboardShortcuts,
-    applicationTitle: state.applicationTitle
+    applicationTitle: state.applicationTitle,
+    useInterfaceFontInServices: state.useInterfaceFontInServices
   });
   const cancel = () => closeDialog();
   return html`
@@ -118,7 +119,8 @@ const initialState = {
   startMinimized: currentSettings.startMinimized,
   alwaysOnTop: currentSettings.alwaysOnTop,
   closeButtonBehavior: currentSettings.closeButtonBehavior,
-  keyboardShortcuts: currentSettings.keyboardShortcuts
+  keyboardShortcuts: currentSettings.keyboardShortcuts,
+  useInterfaceFontInServices: currentSettings.useInterfaceFontInServices === true
 };
 
 render(html`<${Settings} initialState=${initialState} />`, settingsRoot());

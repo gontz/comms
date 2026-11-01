@@ -168,4 +168,14 @@ describe('Entrypoint test suite', () => {
       });
     });
   });
+  describe('Interface font scheme', () => {
+    beforeEach(() => {
+      require('../');
+    });
+    test('registers the privileged font scheme before the app is ready', () => {
+      expect(require('electron').protocol.registerSchemesAsPrivileged).toHaveBeenCalledWith([
+        expect.objectContaining({scheme: 'electronim-font', privileges: expect.objectContaining({bypassCSP: true})})
+      ]);
+    });
+  });
 });

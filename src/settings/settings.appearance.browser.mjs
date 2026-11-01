@@ -14,8 +14,8 @@
    limitations under the License.
  */
 import {html, Card, Icon, Select, TextField} from '../components/index.mjs';
-import {isPaneActive, setProperty, theme, applicationTitle} from './settings.reducer.browser.mjs';
-import {SettingsRow} from './settings.common.browser.mjs';
+import {isPaneActive, setProperty, theme, applicationTitle, toggleProperty} from './settings.reducer.browser.mjs';
+import {SettingsOption, SettingsRow} from './settings.common.browser.mjs';
 
 export const AppearancePane = ({dispatch, state}) => {
   const dispatchSetProperty = setProperty({dispatch});
@@ -44,6 +44,14 @@ export const AppearancePane = ({dispatch, state}) => {
           inputProps=${{maxLength: 100}}
         />
       </${SettingsRow}>
+      <${SettingsOption}
+        className='settings__interface-font-in-services'
+        label='Use the ElectronIM font (Inclusive Sans) in services'
+        title='Apply the interface font to the web pages of your services too. Icons and code keep their own font.'
+        icon=${Icon.textFields}
+        checked=${state.useInterfaceFontInServices === true}
+        onClick=${toggleProperty({dispatch, property: 'useInterfaceFontInServices'})}
+      />
     </${Card}>
   `;
 };

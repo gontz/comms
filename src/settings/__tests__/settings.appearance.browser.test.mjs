@@ -55,6 +55,24 @@ describe('Settings (Appearance) in Browser test suite', () => {
       }));
     });
   });
+  describe('Use the ElectronIM font in services', () => {
+    let $switch;
+    beforeEach(() => {
+      $switch = document.querySelector('.settings__interface-font-in-services .material3.switch');
+    });
+    test('is off by default', () => {
+      expect($switch.classList).not.toContain('switch--checked');
+    });
+    describe('when turned on and saved', () => {
+      beforeEach(async () => {
+        await user.click($switch);
+        await user.click(document.querySelector('.settings__submit'));
+      });
+      test('is saved in the settings', () => {
+        expect(settings.loadSettings()).toEqual(expect.objectContaining({useInterfaceFontInServices: true}));
+      });
+    });
+  });
   describe('Application Title', () => {
     let $applicationTitleContainer;
     let $input;

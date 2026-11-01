@@ -69,6 +69,7 @@ describe('Settings in Browser test suite', () => {
           disableNotificationsGlobally: false,
           theme: 'dark',
           trayEnabled: true,
+          useInterfaceFontInServices: false,
           startMinimized: false,
           alwaysOnTop: false,
           closeButtonBehavior: 'quit',

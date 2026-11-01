@@ -74,6 +74,7 @@ const newWebContentsViewInstance = webPreferences => {
   instance.webContents.getProcessId = jest.fn(() => webPreferences?.id || 1337);
   instance.webContents.getTitle = jest.fn(() => '');
   instance.webContents.getURL = jest.fn();
+  instance.webContents.insertCSS = jest.fn(async () => 'css-key');
   instance.webContents.loadURL = jest.fn(url => {
     instance.webContents.loadedUrl = url;
   });
@@ -141,6 +142,7 @@ const mockElectronInstance = ({...overriddenProps} = {}) => {
   sessionInstance.setSpellCheckerEnabled = jest.fn();
   sessionInstance.setSpellCheckerLanguages = jest.fn();
   sessionInstance.userAgentInterceptor = true;
+  sessionInstance.protocol = {handle: jest.fn()};
   // BaseWindow
   const BaseWindow = jest.fn(() => {
     const baseWindow = newBaseWindowInstance();
@@ -247,6 +249,9 @@ const mockElectronInstance = ({...overriddenProps} = {}) => {
     ipcMain,
     ipcRenderer,
     nativeTheme: {},
+    protocol: {
+      registerSchemesAsPrivileged: jest.fn()
+    },
     session: {
       fromPartition: jest.fn(() => sessionInstance),
       defaultSession: sessionInstance

@@ -20,6 +20,7 @@ const {loadSettings, updateSettings} = require('../settings');
 const {getEnabledDictionaries, getUseNativeSpellChecker} = require('../spell-check');
 const {chromeUserAgent, addUserAgentInterceptor} = require('../user-agent');
 const {handleContextMenu} = require('./context-menu');
+const {addFontProtocol, applyFontOverride} = require('./font-override');
 const {handleRedirect, windowOpenHandler} = require('./redirect');
 
 let activeService = null;
@@ -68,6 +69,7 @@ const cleanUserAgent = view => {
 const addServices = ipcSender => servicesMetadata => {
   const useNativeSpellChecker = getUseNativeSpellChecker();
   const enabledDictionaries = getEnabledDictionaries();
+  const {useInterfaceFontInServices = false} = loadSettings();
   for (const {
     id, url, sandboxed = false, openUrlsInApp = false, allowPopups = false
   } of servicesMetadata) {
@@ -107,6 +109,11 @@ const addServices = ipcSender => servicesMetadata => {
     service.webContents.on('page-favicon-updated', handlePageFaviconUpdatedForCurrentService);
 
     service.webContents.on('context-menu', handleContextMenu(service));
+
+    if (useInterfaceFontInServices) {
+      addFontProtocol(servicePreferences.session);
+      service.webContents.on('dom-ready', () => applyFontOverride(service.webContents));
+    }
 
     const registerIdInDom = () => {
       service.webContents.executeJavaScript(`window.tabId = '${id}';window.serviceId = '${id}';`);

@@ -179,6 +179,36 @@ describe('Service Manager module test suite', () => {
         expect(result).toEqual({action: 'allow'});
       });
     });
+    describe('useInterfaceFontInServices=true', () => {
+      let service;
+      beforeEach(() => {
+        settings.updateSettings({useInterfaceFontInServices: true});
+        serviceManager.addServices({send: jest.fn()})([{id: 1337, url: 'https://localhost'}]);
+        service = electron.WebContentsView.mock.results[0].value;
+        service.webContents.emit('dom-ready');
+      });
+      test('serves the interface font in the service session', () => {
+        expect(electron.session.defaultSession.protocol.handle).toHaveBeenCalledWith('electronim-font', expect.any(Function));
+      });
+      test('injects the font override as a user stylesheet on dom-ready', () => {
+        expect(service.webContents.insertCSS).toHaveBeenCalledWith(
+          expect.stringContaining('@font-face'), {cssOrigin: 'user'});
+      });
+    });
+    describe('useInterfaceFontInServices unset', () => {
+      let service;
+      beforeEach(() => {
+        serviceManager.addServices({send: jest.fn()})([{id: 1337, url: 'https://localhost'}]);
+        service = electron.WebContentsView.mock.results[0].value;
+        service.webContents.emit('dom-ready');
+      });
+      test('does not inject any stylesheet', () => {
+        expect(service.webContents.insertCSS).not.toHaveBeenCalled();
+      });
+      test('does not serve the interface font', () => {
+        expect(electron.session.defaultSession.protocol.handle).not.toHaveBeenCalled();
+      });
+    });
     test('openUrlsInApp=true, should not set will-navigate event handler', () => {
       // When
       serviceManager.addServices({send: jest.fn()})([{id: 1337, url: 'https://localhost', openUrlsInApp: true}]);
