@@ -26,6 +26,9 @@ This is a fork of [manusa/electronim](https://github.com/manusa/electronim), kep
   Windows is unchanged, as it uses the native Windows Hello dialog.
 - 🕵️ A clean Chrome user-agent for every service.
 - 🎨 A new application icon.
+- 🔤 [Inclusive Sans](https://fonts.google.com/specimen/Inclusive+Sans) as the interface font (bundled, so no
+  network is needed; SIL Open Font License, see `src/styles/base/fonts/inclusive-sans-OFL.txt`).
+  Roboto remains the fallback.
 
 To sync with upstream:
 

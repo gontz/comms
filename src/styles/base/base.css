@@ -21,6 +21,7 @@ html.electronim,
 .electronim body {
   background: var(--color-canvas-default);
   color: var(--color-fg-default);
+  font-family: var(--md-ref-typeface-plain);
 }
 
 html.electronim {

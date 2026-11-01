@@ -48,7 +48,7 @@ body {
 }
 
 .tab-container .chrome-tabs .chrome-tab .chrome-tab-title {
-  /*font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;*/
+  font-family: var(--md-ref-typeface-plain);
   /* https://github.com/vaadin/web-components/issues/4183 */
   /* Prevents https://bugs.chromium.org/p/chromium/issues/detail?id=1399431 */
   -webkit-mask-image: none;
